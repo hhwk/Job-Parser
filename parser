@@ -1,0 +1,90 @@
+import requests
+from bs4 import BeautifulSoup as bs
+from openpyxl import  load_workbook
+import pandas as pd
+import re
+import json
+
+fn='Final.xlsx'
+wb=load_workbook(fn)
+
+odesa=wb['odesa']
+noodesa=wb['noodesa']
+kyiv=wb['kyiv']
+nokyiv=wb['nokyiv']
+dnipro=wb['dnipro']
+nodnipro=wb['nodnipro']
+kharkiv=wb['kharkiv']
+nokharkiv=wb['nokharkiv']
+prosent=0
+for country in range(1,5):
+    count=0
+    nocount=0
+    if country ==1:
+        countryurl='odesa'
+    elif country ==2:
+        countryurl='kyiv'
+    elif country ==3:
+        countryurl='dnipro'
+    elif country==4:
+        countryurl='kharkiv'
+
+    for i in range(1, 81):
+        match=None
+        URL_TEMPLATE = (f'https://www.work.ua/ru/jobs-{countryurl}-it/?advs=1&employment=74&page={i}')
+        prosent+=0.31
+        print("Загрузка", prosent,'%')
+        r = requests.get(URL_TEMPLATE)
+        soup = bs(r.text, "html.parser")
+        vacancies_names = soup.find_all('div', class_="card card-hover card-visited wordwrap job-link")
+        for name in vacancies_names:
+            redux=name.a['title']
+            match1=re.search(r'.\s\w{8}\s\w\w\s\d{1,2}\s\w{1,20}\s\d{4}',redux)
+            redux=redux.replace(match1[0],'')
+
+            time=name.b.text
+            time=time.replace('\u202f',' ')
+            time=time.replace('\u2009',' ')
+            time=time.replace('\xa0',' ')
+            match=re.search(r'\d\d.\d\d\d...\d\d.\d\d\d.\w\w\w',time)
+            
+            if match == None:
+                nocount+=1
+                nocount1=str(nocount)+('. ')
+                if country==1:
+                    noodesa[f'A{nocount}']=redux
+                    noodesa[f'B{nocount}']=0
+                    noodesa[f'C{nocount}']='https://www.work.ua'+name.a['href']
+                elif country==2:
+                    nokyiv[f'A{nocount}'] = redux
+                    nokyiv[f'B{nocount}'] = 0
+                    nokyiv[f'C{nocount}'] = 'https://www.work.ua' + name.a['href']
+                elif country==3:
+                    nodnipro[f'A{nocount}'] = redux
+                    nodnipro[f'B{nocount}'] = 0
+                    nodnipro[f'C{nocount}'] = 'https://www.work.ua' + name.a['href']
+                elif country==4:
+                    nokharkiv[f'A{nocount}'] = redux
+                    nokharkiv[f'B{nocount}'] = 0
+                    nokharkiv[f'C{nocount}'] = 'https://www.work.ua' + name.a['href']
+            else:
+                count+=1
+                count1=str(count)+('. ')
+                if country==1:
+                    odesa[f'A{count}'] = redux
+                    odesa[f'B{count}'] = match[0]
+                    odesa[f'C{count}'] = 'https://www.work.ua' + name.a['href']
+                elif country==2:
+                    kyiv[f'A{count}'] = redux
+                    kyiv[f'B{count}'] = match[0]
+                    kyiv[f'C{count}'] = 'https://www.work.ua' + name.a['href']
+                elif country==3:
+                    dnipro[f'A{count}'] = redux
+                    dnipro[f'B{count}'] = match[0]
+                    dnipro[f'C{count}'] = 'https://www.work.ua' + name.a['href']
+                elif country==4:
+                    kharkiv[f'A{count}'] = redux
+                    kharkiv[f'B{count}'] = match[0]
+                    kharkiv[f'C{count}'] = 'https://www.work.ua' + name.a['href']
+wb.save(fn)
+wb.close()
